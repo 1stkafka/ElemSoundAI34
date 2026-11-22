@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>소음 지킴이 로봇 프로젝트 | 과학 3학년</title>
+<title>소음 지킴이 로봇 프로젝트 | 3·4학년 과학</title>
 <style>
 /* 토큰: 수업자료 스킬(lesson-html)의 과학 서식을 그대로 쓴다 */
 :root{
@@ -128,7 +128,7 @@ td .field{padding:.4rem .5rem}
 <body>
 <header class="bar">
   <div class="logo">AI</div>
-  <div><h1>소음 지킴이 로봇 프로젝트</h1><div class="sub" id="sub">3학년 과학 · 3. 소리의 성질 · 카미봇 파이 피지컬 AI</div></div>
+  <div><h1>소음 지킴이 로봇 프로젝트</h1><div class="sub" id="sub">3·4학년 과학 · 소리의 성질 · 카미봇 파이 피지컬 AI</div></div>
   <div class="grow"></div>
   <div class="chips" id="chips" hidden>
     <span class="chip me" id="me"></span>
@@ -145,6 +145,7 @@ td .field{padding:.4rem .5rem}
   <div class="panel">
     <span class="pill">소음 지킴이 로봇 프로젝트</span>
     <h2>수업에 들어가기</h2>
+    <label>몇 학년인가요?</label><div class="opts" id="opt-grade"></div>
     <label>몇 차시인가요?</label><div class="opts" id="opt-lesson"></div>
     <label>몇 반인가요?</label><div class="opts" id="opt-class"></div>
     <div id="student-fields">
@@ -208,9 +209,10 @@ const POLL_MS = 3000, PING_MS = 20000;
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-const S = {role: 'student', lesson: 1, cls: 1, group: '', name: '', pin: '',
+const S = {role: 'student', grade: 3, lesson: 1, cls: 1, group: '', name: '', pin: '',
            view: 0, classStep: 0, answers: {}, sent: {}, dirty: {}, state: null, students: [], tab: 'lesson'};
-const room = () => `L${S.lesson}-C${S.cls}`;
+const room = () => `${S.grade === 4 ? 'G4-' : ''}L${S.lesson}-C${S.cls}`;
+const clsName = () => `${S.grade}학년 ${S.cls}반`;
 const L = () => LESSONS[S.lesson];
 const qlist = () => L().steps.flatMap((st, i) => st.questions.map(q => ({...q, step: i})));
 
@@ -237,8 +239,10 @@ function opts(el, items, cur, set) {
 }
 function setupGate() {
   const u = new URLSearchParams(location.search);
+  if (u.get('grade')) S.grade = +u.get('grade') === 4 ? 4 : 3;
   if (u.get('lesson')) S.lesson = Math.min(4, Math.max(1, +u.get('lesson')));
   if (u.get('class')) S.cls = Math.min(7, Math.max(1, +u.get('class')));
+  opts($('#opt-grade'), [[3, '3학년'], [4, '4학년']], S.grade, v => S.grade = +v);
   opts($('#opt-lesson'), [1, 2, 3, 4].map(n => [n, `${n}차시`]), S.lesson, v => S.lesson = +v);
   opts($('#opt-class'), [1, 2, 3, 4, 5, 6, 7].map(n => [n, `${n}반`]), S.cls, v => S.cls = +v);
   opts($('#opt-group'), GROUPS.map(g => [g, g]), '', v => S.group = v);
@@ -278,10 +282,10 @@ async function enter() {
     else msg.textContent = '들어가지 못했어요: ' + e.message;
     return;
   }
-  history.replaceState(null, '', `?lesson=${S.lesson}&class=${S.cls}`);
+  history.replaceState(null, '', `?grade=${S.grade}&lesson=${S.lesson}&class=${S.cls}`);
   $('#gate').hidden = true; $('#room').hidden = false; $('#chips').hidden = false;
-  $('#me').textContent = S.role === 'teacher' ? `[${S.cls}반] 선생님` : `[${S.cls}반 ${S.group}] ${S.name}`;
-  $('#sub').textContent = `${S.lesson}차시 · ${L().title} · ${S.cls}반`;
+  $('#me').textContent = S.role === 'teacher' ? `[${clsName()}] 선생님` : `[${clsName()} ${S.group}] ${S.name}`;
+  $('#sub').textContent = `${S.lesson}차시 · ${L().title} · ${clsName()}`;
   $('#btn-reset').hidden = S.role !== 'teacher';
   $('#tab-roster').hidden = S.role !== 'teacher';
   $('#btn-save').textContent = S.role === 'teacher' ? '결과저장(CSV)' : '내 답 저장';
@@ -506,34 +510,34 @@ function download(name, text, type) {
 }
 const csvCell = s => '"' + String(s ?? '').replace(/"/g, '""') + '"';
 $('#btn-save').onclick = async () => {
-  const qs = qlist(), title = `${S.lesson}차시_${L().title.replace(/[?\s]/g, '')}_${S.cls}반`;
+  const qs = qlist(), title = `${S.lesson}차시_${L().title.replace(/[?\s]/g, '')}_${S.grade}학년${S.cls}반`;
   if (S.role === 'teacher') {
     try { const d = await api('teacher'); S.students = d.students; } catch (e) { return toast('불러오지 못했어요: ' + e.message); }
-    const head = ['반', '모둠', '이름', '마지막 등록', '등록 문항 수', ...qs.map(q => `${qNumber(q.id)}. ${q.text}`)];
-    const rows = S.students.map(s => [`${S.cls}반`, s.group, s.name, s.at ? new Date(s.at).toLocaleString('ko-KR') : '',
+    const head = ['학년·반', '모둠', '이름', '마지막 등록', '등록 문항 수', ...qs.map(q => `${qNumber(q.id)}. ${q.text}`)];
+    const rows = S.students.map(s => [clsName(), s.group, s.name, s.at ? new Date(s.at).toLocaleString('ko-KR') : '',
       qs.filter(q => !isEmpty(s.answers?.[q.id])).length, ...qs.map(q => valueText(q, s.answers?.[q.id]))]);
     download(`${title}_결과.csv`, '﻿' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
     toast(`${S.students.length}명의 답을 CSV로 저장했어요.`);
   } else {
     const unsent = qs.filter(q => S.dirty[q.id]).length;
-    const text = `${S.lesson}차시 ${L().title}\n${S.cls}반 ${S.group} ${S.name}\n저장한 때: ${new Date().toLocaleString('ko-KR')}\n\n` +
+    const text = `${S.lesson}차시 ${L().title}\n${clsName()} ${S.group} ${S.name}\n저장한 때: ${new Date().toLocaleString('ko-KR')}\n\n` +
       qs.map(q => `${qNumber(q.id)}. ${q.text}\n${valueText(q, S.answers[q.id]) || '(빈칸)'}\n`).join('\n');
     download(`${title}_${S.group}_${S.name}.txt`, text, 'text/plain;charset=utf-8');
     toast(unsent ? `내 답을 파일로 저장했어요. 아직 등록 안 한 답이 ${unsent}개 있어요.` : '내 답을 파일로 저장했어요.');
   }
 };
 $('#btn-reset').onclick = async () => {
-  const typed = prompt(`${S.lesson}차시 ${S.cls}반의 모든 답과 진행 상태를 지웁니다. 되돌릴 수 없어요.\n지우려면 "초기화"라고 쓰세요.`);
+  const typed = prompt(`${S.lesson}차시 ${clsName()}의 모든 답과 진행 상태를 지웁니다. 되돌릴 수 없어요.\n지우려면 "초기화"라고 쓰세요.`);
   if (typed !== '초기화') return;
   try { const r = await api('reset', {body: {}}); S.classStep = 0; S.view = 0; S.students = [];
         renderFlow(); renderStep(); toast(`초기화했어요. (${r.deleted}개 지움)`); }
   catch (e) { toast('초기화하지 못했어요: ' + e.message); }
 };
 $('#btn-qr').onclick = () => {
-  const url = `${location.origin}${location.pathname}?lesson=${S.lesson}&class=${S.cls}`;
+  const url = `${location.origin}${location.pathname}?grade=${S.grade}&lesson=${S.lesson}&class=${S.cls}`;
   const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
   $('#qr-box').innerHTML = qr.createSvgTag({cellSize: 8, margin: 2, scalable: true});
-  $('#qr-label').textContent = `${S.lesson}차시 · ${S.cls}반 — 찍고 모둠과 이름을 고르면 들어와요.`;
+  $('#qr-label').textContent = `${S.lesson}차시 · ${clsName()} — 찍고 모둠과 이름을 고르면 들어와요.`;
   $('#qr-url').textContent = url; $('#qr-modal').hidden = false;
   $('#btn-copy').onclick = () => navigator.clipboard.writeText(url).then(() => toast('링크를 복사했어요.'), () => toast('복사하지 못했어요. 주소를 직접 알려 주세요.'));
 };
@@ -541,7 +545,7 @@ $('#btn-qr-close').onclick = () => $('#qr-modal').hidden = true;
 $('#qr-modal').onclick = e => { if (e.target.id === 'qr-modal') $('#qr-modal').hidden = true; };
 $('#btn-exit').onclick = () => {
   if (S.role === 'student' && Object.values(S.dirty).some(Boolean) && !confirm('등록하지 않은 답이 있어요. 그래도 나갈까요?')) return;
-  location.href = `${location.pathname}?lesson=${S.lesson}&class=${S.cls}`;
+  location.href = `${location.pathname}?grade=${S.grade}&lesson=${S.lesson}&class=${S.cls}`;
 };
 addEventListener('beforeunload', e => { if (Object.values(S.dirty).some(Boolean)) { e.preventDefault(); e.returnValue = ''; } });
 setupGate();
