@@ -1,5 +1,6 @@
 // 소음 지킴이 실시간 수업방 API (Netlify Functions v2 + Netlify Blobs)
-// 방(room) = 차시 + 반. 예) L2-C3 = 2차시 3반
+// 방(room) = 학년 + 차시 + 반. 예) L2-C3 = 3학년 2차시 3반, G4-L2-C3 = 4학년 2차시 3반
+// (3학년은 처음 만든 방 이름을 그대로 써서 이미 저장된 답이 유지된다)
 //   {room}/state        : 교사가 정한 진행 단계, 공개한 문항, 공개 답 스냅숏, 접속 수
 //   {room}/ans/{sid}    : 학생 한 명의 답 모음
 //   {room}/pres/{sid}   : 학생 접속 표시(마지막 접속 시각)
@@ -57,7 +58,7 @@ export default async (req) => {
   const p = (k) => String(body[k] ?? url.searchParams.get(k) ?? "");
 
   const room = p("room");
-  if (!/^L[1-5]-C[1-9]$/.test(room)) return json({ error: "방 정보가 올바르지 않아요." }, 400);
+  if (!/^(G4-)?L[1-5]-C[1-9]$/.test(room)) return json({ error: "방 정보가 올바르지 않아요." }, 400);
   const store = getStore({ name: "soundbot-class", consistency: "strong" });
 
   const isTeacher = () => p("pin") === teacherPin();
