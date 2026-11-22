@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>소음 지킴이 로봇 프로젝트 | 과학 3학년</title>
+<style>
+/* 토큰: 수업자료 스킬(lesson-html)의 과학 서식을 그대로 쓴다 */
+:root{
+  --subject:#047857; --ink:#16161A; --muted:#5E5E68; --line:#DCDCE3; --paper:#FFFFFF;
+  --wash:color-mix(in srgb, var(--subject) 7%, white); --bg:#F4F5F7; --radius:12px;
+  --font:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);font-size:18px;line-height:1.6;word-break:keep-all}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--subject)}
+:focus-visible{outline:3px solid var(--subject);outline-offset:2px}
+[hidden]{display:none !important}
+
+/* 위쪽 상태 막대 */
+.bar{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;display:flex;align-items:center;gap:1rem;
+  padding:.7rem 1.2rem;flex-wrap:wrap}
+.logo{width:3rem;height:3rem;border-radius:12px;background:var(--subject);display:grid;place-items:center;font-weight:800;font-size:1.1rem;flex:none}
+.bar h1{font-size:1.25rem;margin:0;line-height:1.3}
+.bar .sub{font-size:.85rem;color:#C9C9D2}
+.bar .grow{flex:1 1 auto}
+.chips{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+.chip{border:1.5px solid #3A3A44;background:#24242B;color:#fff;border-radius:10px;padding:.42rem .8rem;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:#8B8B97}
+.chip.me{background:transparent;color:#FFD66B;border-color:#57575F;cursor:default}
+.chip.live{cursor:default}
+.chip.live::before{content:"";display:inline-block;width:.55rem;height:.55rem;border-radius:50%;background:#34D399;margin-right:.4rem}
+.chip.go{background:var(--subject);border-color:var(--subject)}
+.chip.danger{background:#3B1515;border-color:#7F1D1D;color:#FECACA}
+
+/* 본문 배치 */
+.wrap{display:grid;grid-template-columns:20rem 1fr;gap:1.2rem;padding:1.2rem;max-width:90rem;margin:0 auto}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:1.2rem}
+.side h2{font-size:1.1rem;margin:0 0 .8rem}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.6rem}
+.flow button{width:100%;text-align:left;border:1.5px solid var(--line);background:var(--paper);border-radius:14px;padding:.7rem .9rem;cursor:pointer}
+.flow button:hover{border-color:var(--subject)}
+.flow .t{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
+.flow b{display:block;font-size:1rem;margin-top:.15rem}
+.flow .now{background:var(--subject);border-color:var(--subject);color:#fff}
+.flow .now .t{color:#D1FAE5}
+.flow .tag{background:#fff;color:var(--subject);border-radius:99px;padding:0 .5rem;font-size:.75rem;font-weight:700}
+.flow .seen{outline:2px dashed var(--subject);outline-offset:2px}
+.goalbox{border-left:5px solid var(--subject);background:var(--wash);padding:.8rem 1rem;border-radius:0 10px 10px 0;margin-top:1rem;font-size:.92rem}
+.goalbox h3{margin:0 0 .3rem;font-size:.9rem;color:var(--subject)}
+.goalbox ul{margin:0;padding-left:1.1rem}
+
+.tabs{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.tab{border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:.45rem .9rem;cursor:pointer;font-size:.9rem}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tabs .grow{flex:1}
+.stephead{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.pill{display:inline-block;background:var(--wash);color:var(--subject);font-weight:700;border-radius:99px;padding:.15rem .8rem;font-size:.85rem}
+.timer{border:1.5px solid var(--subject);color:var(--subject);background:var(--paper);border-radius:99px;padding:.1rem .7rem;font-weight:700;cursor:pointer}
+.timer[data-running]{background:var(--subject);color:#fff}
+.main h2{font-size:1.6rem;margin:.6rem 0 .8rem;letter-spacing:-.02em}
+.say{color:var(--muted);border-left:2px solid var(--line);padding-left:.8rem;margin:.6rem 0}
+.card{border:1.5px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem;margin:.8rem 0;background:var(--paper)}
+.card h3{margin:0 0 .4rem;font-size:1.02rem}
+.card ol,.card ul{margin:0;padding-left:1.3rem}.card li+li{margin-top:.2rem}
+.card.warn{border-color:#B91C1C;border-width:2px}.card.warn h3{color:#B91C1C}.card.warn h3::before{content:"! ";font-weight:800}
+.card.prep{background:var(--wash);border-style:dashed}
+.check{list-style:none;padding:0;margin:.6rem 0}
+.check li{padding-left:1.9rem;position:relative;margin:.35rem 0}
+.check li::before{content:"";position:absolute;left:0;top:.28rem;width:1.05rem;height:1.05rem;border:1.5px solid var(--muted);border-radius:4px}
+.answer{background:var(--wash);border-radius:10px;padding:.7rem .9rem;margin:.6rem 0;font-size:.95rem}
+.answer::before{content:"교사용 답 ";font-weight:700;color:var(--subject)}
+table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.95rem}
+th,td{border:1px solid var(--line);padding:.45rem .55rem;text-align:left;vertical-align:middle}
+th{background:var(--wash)}
+
+/* 문항 */
+.q{border:1.5px solid var(--line);border-radius:16px;padding:1rem 1.1rem;margin:1rem 0;background:#FCFCFD}
+.q .qt{font-weight:700;margin:0 0 .6rem}
+.q .num{display:inline-grid;place-items:center;min-width:1.8rem;height:1.8rem;border-radius:50%;background:var(--subject);color:#fff;font-size:.9rem;margin-right:.45rem}
+.field{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:#fff;resize:vertical}
+.field:focus{border-color:var(--subject)}
+.field::placeholder{color:#9a9aa5}
+td .field{padding:.4rem .5rem}
+.qrow{display:flex;gap:.6rem;align-items:center;margin-top:.6rem;flex-wrap:wrap}
+.btn{border:none;border-radius:10px;padding:.55rem 1.1rem;font-weight:700;cursor:pointer;background:var(--ink);color:#fff}
+.btn.sub{background:var(--paper);color:var(--ink);border:1.5px solid var(--line)}
+.btn.green{background:var(--subject)}
+.btn:disabled{opacity:.5;cursor:default}
+.st{font-size:.85rem;color:var(--muted)}
+.st.ok{color:var(--subject);font-weight:700}
+.st.warn{color:#B45309;font-weight:700}
+.answers{margin-top:.8rem;border-top:1px dashed var(--line);padding-top:.7rem}
+.answers h4{margin:0 0 .4rem;font-size:.9rem;color:var(--muted)}
+.ansgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.5rem}
+.ans{background:#fff;border:1px solid var(--line);border-radius:10px;padding:.5rem .7rem;font-size:.92rem}
+.ans .who{font-size:.78rem;color:var(--subject);font-weight:700}
+.ans pre{margin:.15rem 0 0;white-space:pre-wrap;font:inherit}
+.switch{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;cursor:pointer}
+.nav{display:flex;justify-content:space-between;gap:.6rem;margin-top:1.4rem}
+
+/* 진행 현황 표 */
+.roster td,.roster th{text-align:center;font-size:.85rem;padding:.35rem}
+.roster td:first-child,.roster th:first-child{text-align:left}
+.dot{display:inline-block;width:.6rem;height:.6rem;border-radius:50%;background:#C9C9D2;margin-right:.3rem}
+.dot.on{background:#10B981}
+.done{color:var(--subject);font-weight:800}
+
+/* 입장 화면·모달 */
+.gate{min-height:calc(100vh - 4.4rem);display:grid;place-items:center;padding:1.5rem}
+.gate .panel{width:min(34rem,100%)}
+.gate h2{margin:.2rem 0 1rem}
+.gate label{display:block;font-weight:700;font-size:.9rem;margin:.8rem 0 .3rem}
+.opts{display:flex;gap:.4rem;flex-wrap:wrap}
+.opt{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:.45rem .85rem;cursor:pointer}
+.opt.on{background:var(--subject);border-color:var(--subject);color:#fff}
+.modal{position:fixed;inset:0;background:rgba(10,10,15,.55);display:grid;place-items:center;z-index:50;padding:1rem}
+.modal .panel{width:min(30rem,100%);text-align:center}
+.qrbox svg{width:min(18rem,70vw);height:auto}
+.toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.7rem 1.2rem;border-radius:12px;z-index:60;font-size:.95rem}
+
+@media(max-width:960px){.wrap{grid-template-columns:1fr}.bar h1{font-size:1.05rem}}
+@media print{.bar,.side,.tabs,.nav,.qrow,.chip{display:none !important}.wrap{display:block;padding:0}.panel{border:none}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="logo">AI</div>
+  <div><h1>소음 지킴이 로봇 프로젝트</h1><div class="sub" id="sub">3학년 과학 · 3. 소리의 성질 · 카미봇 파이 피지컬 AI</div></div>
+  <div class="grow"></div>
+  <div class="chips" id="chips" hidden>
+    <span class="chip me" id="me"></span>
+    <span class="chip live" id="live">접속 확인 중</span>
+    <button class="chip go" id="btn-qr" type="button">QR 입장</button>
+    <button class="chip" id="btn-save" type="button">결과저장</button>
+    <button class="chip danger" id="btn-reset" type="button" hidden>초기화</button>
+    <button class="chip" id="btn-exit" type="button">나가기</button>
+  </div>
+</header>
+
+<!-- 입장 화면 -->
+<section class="gate" id="gate">
+  <div class="panel">
+    <span class="pill">소음 지킴이 로봇 프로젝트</span>
+    <h2>수업에 들어가기</h2>
+    <label>몇 차시인가요?</label><div class="opts" id="opt-lesson"></div>
+    <label>몇 반인가요?</label><div class="opts" id="opt-class"></div>
+    <div id="student-fields">
+      <label>몇 모둠인가요?</label><div class="opts" id="opt-group"></div>
+      <label for="in-name">이름</label>
+      <input class="field" id="in-name" maxlength="20" placeholder="이름을 써요" autocomplete="off">
+    </div>
+    <div id="teacher-fields" hidden>
+      <label for="in-pin">교사 PIN</label>
+      <input class="field" id="in-pin" type="password" maxlength="20" placeholder="Netlify에 정한 TEACHER_PIN" autocomplete="off">
+    </div>
+    <p class="st warn" id="gate-msg"></p>
+    <div class="qrow">
+      <button class="btn green" id="btn-enter" type="button">수업 입장하기 →</button>
+      <button class="btn sub" id="btn-role" type="button">선생님으로 입장하기</button>
+    </div>
+  </div>
+</section>
+
+<!-- 수업 화면 -->
+<div class="wrap" id="room" hidden>
+  <aside class="panel side">
+    <h2>오늘 수업 흐름</h2>
+    <ul class="flow" id="flow"></ul>
+    <div class="goalbox"><h3>이 시간에 할 일</h3><ul id="goals"></ul></div>
+  </aside>
+  <main class="panel main">
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-tab="lesson" type="button">수업 화면</button>
+      <button class="tab" data-tab="roster" type="button" id="tab-roster" hidden>진행 현황</button>
+      <span class="grow"></span>
+      <span class="st" id="sync"></span>
+    </div>
+    <div id="view-lesson"></div>
+    <div id="view-roster" hidden></div>
+  </main>
+</div>
+
+<div class="modal" id="qr-modal" hidden>
+  <div class="panel">
+    <h2>참여 QR코드</h2>
+    <p class="st" id="qr-label"></p>
+    <div class="qrbox" id="qr-box"></div>
+    <p class="st" id="qr-url" style="word-break:break-all"></p>
+    <div class="qrow" style="justify-content:center">
+      <button class="btn sub" id="btn-copy" type="button">접속 링크 복사하기</button>
+      <button class="btn" id="btn-qr-close" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Copyright (c) 2009 Kazuhiko Arase
+// Licensed under the MIT license:
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});
+</script>
+<script>
+const LESSONS = {"1": {"title": "소리는 어떻게 서로 다를까?", "goals": ["소리의 세기와 높낮이를 비교할 수 있다.", "카미봇 파이로 높낮이가 다른 소리를 낼 수 있다."], "steps": [{"min": 5, "label": "열기", "title": "여러 가지 소리 듣기", "html": "<p>선생님이 들려주는 소리를 잘 들어요.</p>", "say": "두 소리는 무엇이 다른가요? 어떤 소리가 더 크고, 어떤 소리가 더 높은가요?", "answer": "", "questions": [{"id": "q1", "type": "text", "text": "소리를 알아듣는 로봇을 만들려면 소리에 대해 무엇을 알아야 할까요?", "example": "소리가 큰지 작은지 알아야 한다", "lines": 2}]}, {"min": 10, "label": "활동 1", "title": "카미봇 파이로 도-레-미 연주하기", "html": "<div class=\"card prep\"><h3>준비물 (모둠마다)</h3><ul><li>카미봇 파이 1대</li><li>크롬북 1대</li><li>연주 파일 1개</li><li>소리 카드 1세트</li></ul></div><div class=\"card warn\"><h3>로봇 약속</h3><ul><li>로봇은 책상 가운데에서만 움직입니다.</li><li>쓰지 않을 때는 전원을 끕니다.</li><li>로봇을 들고 돌아다니지 않습니다.</li></ul></div><div class=\"card\"><h3>이렇게 해요</h3><ol><li><a href=\"files/lesson1-melody.sb3\" download>연주 파일 내려받기</a>를 누릅니다.</li><li><a href=\"https://bitblockai.vercel.app\" target=\"_blank\" rel=\"noopener\">비트블록 AI 열기</a>를 누릅니다.</li><li>파일 → 컴퓨터에서 불러오기로 내려받은 파일을 엽니다.</li><li>카미봇 파이 전원을 켭니다.</li><li>카미봇 블록의 연결 버튼을 누르고 내 로봇을 고릅니다.</li><li>초록 깃발을 누르고 소리를 들어요.</li><li>위쪽 화살표(높은 소리)와 아래쪽 화살표(낮은 소리)를 눌러 비교합니다.</li></ol></div>", "say": "", "answer": "음 숫자가 클수록 높은 소리가 납니다. 소리가 나는 물체는 떨립니다.", "questions": [{"id": "q2", "type": "text", "text": "60번 음을 72번 음으로 바꾸면 소리가 어떻게 되나요?", "example": "소리가 더 높아진다", "lines": 1}, {"id": "q3", "type": "text", "text": "소리가 날 때 로봇에 살짝 손을 대 보세요. 어떤 느낌이 드나요?", "example": "떨린다", "lines": 1}]}, {"min": 12, "label": "활동 2", "title": "기준에 따라 소리 나누기", "html": "<div class=\"card\"><h3>이렇게 해요</h3><ol><li>소리 카드를 한 장씩 소리 내어 봅니다.</li><li>큰 소리인지 작은 소리인지 정합니다.</li><li>높은 소리인지 낮은 소리인지 정합니다.</li><li>4칸 분류판에 카드를 올려놓습니다.</li><li>아래 표에 소리 이름을 적습니다.</li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q4", "type": "table", "text": "4칸에 들어간 소리를 적어 봅시다.", "headers": ["", "높은 소리", "낮은 소리"], "rows": [{"label": "큰 소리", "cells": ["text", "text"]}, {"label": "작은 소리", "cells": ["text", "text"]}], "examples": {"0-0": "호루라기", "0-1": "북", "1-0": "새소리", "1-1": "낮은 콧노래"}}, {"id": "q5", "type": "text", "text": "모둠 친구와 생각이 달랐던 카드가 있나요? 어떻게 정했나요?", "example": "박수는 다시 들어 보고 큰 소리로 정했다", "lines": 2}]}, {"min": 10, "label": "활동 3", "title": "녹음한 소리를 로봇으로 흉내 내기", "html": "<div class=\"card\"><h3>이렇게 해요</h3><ol><li>크롬북으로 주변 소리 하나를 녹음합니다.</li><li>녹음한 소리를 다시 들어요.</li><li>연주 파일의 음 숫자와 박자를 바꿔 비슷하게 만듭니다.</li><li>두 소리를 번갈아 들어 비교합니다.</li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q6", "type": "text", "text": "녹음한 소리와 로봇이 낸 소리는 어떤 점이 같고 다른가요?", "example": "높이는 비슷했지만 로봇 소리가 더 작았다", "lines": 2}]}, {"min": 3, "label": "정리", "title": "오늘 배운 것", "html": "<ul class=\"check\"><li>소리의 세기와 높낮이를 비교할 수 있다.</li><li>카미봇 파이로 높낮이가 다른 소리를 낼 수 있다.</li></ul>", "say": "다음 시간에는 AI에게 이 소리들을 구별하도록 가르쳐 봅시다.", "answer": "", "questions": [{"id": "q7", "type": "text", "text": "오늘 알게 된 것을 한 문장으로 써요.", "example": "음 숫자가 클수록 높은 소리가 난다", "lines": 1}]}]}, "2": {"title": "AI에게 가르칠 소리 데이터 모으기", "goals": ["소리를 세기에 따라 나누어 이름표를 정할 수 있다.", "티처블 머신에 소리 데이터를 모을 수 있다."], "steps": [{"min": 5, "label": "열기", "title": "AI는 어떻게 소리를 배울까?", "html": "<p>스마트 스피커는 내 말을 어떻게 알아들을까요?</p>", "say": "AI는 이름표가 붙은 소리를 많이 듣고 배워요. 이렇게 배우는 것을 지도학습이라고 해요.", "answer": "", "questions": [{"id": "q1", "type": "text", "text": "AI가 큰 소리와 작은 소리를 구별하려면 무엇이 필요할까요?", "example": "이름표를 붙인 소리가 많이 필요하다", "lines": 2}]}, {"min": 8, "label": "활동 1", "title": "이름표와 수집 계획 정하기", "html": "<p>이름표는 세 가지로 정해요. <b>띄어쓰기까지 똑같이</b> 써야 4차시에 로봇이 알아들어요.</p><table><tr><th>역할</th><th>하는 일</th></tr><tr><td>이끔이</td><td>크롬북으로 녹음 버튼을 누릅니다</td></tr><tr><td>기록이</td><td>모은 개수를 이 화면에 적습니다</td></tr><tr><td>칭찬이</td><td>큰 소리를 냅니다</td></tr><tr><td>깔끔이</td><td>작은 소리를 냅니다</td></tr></table>", "say": "", "answer": "", "questions": [{"id": "q2", "type": "table", "text": "우리 모둠의 수집 계획을 세워요.", "headers": ["이름표", "어떤 소리를 녹음할까?", "누가 소리를 낼까?"], "rows": [{"label": "배경 소음(조용함)", "cells": ["text", "text"]}, {"label": "큰 소리", "cells": ["text", "text"]}, {"label": "작은 소리", "cells": ["text", "text"]}], "examples": {"0-0": "모두 조용히 있을 때", "1-0": "박수, 책상 두드리기", "2-0": "속삭임, 연필 소리", "0-1": "모두", "1-1": "칭찬이", "2-1": "깔끔이"}}]}, {"min": 15, "label": "활동 2", "title": "티처블 머신으로 소리 데이터 모으기", "html": "<div class=\"card warn\"><h3>약속</h3><ul><li>친구 목소리는 허락을 받고 녹음합니다.</li><li>큰 소리는 박수 정도로만 냅니다.</li><li>다른 모둠이 배경 소음을 녹음할 때는 조용히 기다립니다.</li></ul></div><div class=\"card\"><h3>① 프로젝트 열기</h3><ol><li><a href=\"https://teachablemachine.withgoogle.com/train/audio\" target=\"_blank\" rel=\"noopener\">티처블 머신 오디오 프로젝트 열기</a>를 누릅니다.</li><li>오디오 프로젝트 화면이 열렸는지 확인합니다.</li><li>마이크 사용을 물어보면 <b>허용</b>을 누릅니다.</li></ol></div><div class=\"card\"><h3>② 배경 소음 모으기 (20개)</h3><ol><li>선생님 신호에 맞춰 모두 조용히 합니다.</li><li>배경 소음 칸에서 <b>마이크</b>를 누릅니다.</li><li><b>20초 녹음</b>을 누르고 20초 동안 조용히 기다립니다.</li><li><b>샘플 추출</b>을 누릅니다.</li><li>샘플이 20개 생겼는지 확인합니다.</li></ol></div><div class=\"card\"><h3>③ 큰 소리 모으기 (8개 이상)</h3><ol><li>Class 2 이름을 지우고 <b>큰 소리</b>라고 씁니다.</li><li><b>마이크</b>를 누르고 <b>녹음</b>을 누릅니다.</li><li>2초 동안 큰 소리를 냅니다.</li><li><b>샘플 추출</b>을 누릅니다.</li><li>8개가 넘을 때까지 되풀이합니다.</li></ol></div><div class=\"card\"><h3>④ 작은 소리 모으기 (8개 이상)</h3><ol><li><b>클래스 추가</b>를 누릅니다.</li><li>이름을 <b>작은 소리</b>라고 씁니다.</li><li>③과 같은 방법으로 8개 넘게 모읍니다.</li></ol></div><div class=\"card\"><h3>⑤ 프로젝트 저장하기</h3><ol><li>왼쪽 위 메뉴(≡)를 누릅니다.</li><li><b>프로젝트를 파일로 다운로드</b>를 누릅니다.</li><li>파일 이름에 반과 모둠을 씁니다. 예) 3반2모둠</li><li>이 파일은 3차시에 다시 씁니다.</li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q3", "type": "table", "text": "모은 샘플 개수를 적어요.", "headers": ["이름표", "샘플 개수"], "rows": [{"label": "배경 소음", "cells": ["num"]}, {"label": "큰 소리", "cells": ["num"]}, {"label": "작은 소리", "cells": ["num"]}], "examples": {"0-0": "20", "1-0": "10", "2-0": "9"}}]}, {"min": 9, "label": "활동 3", "title": "모은 데이터 점검하기", "html": "<div class=\"card\"><h3>이렇게 해요</h3><ol><li>샘플을 하나씩 눌러 들어 봅니다.</li><li>이름표와 다른 소리는 휴지통으로 지웁니다.</li><li>여러 친구 목소리와 여러 거리의 소리를 더 모읍니다.</li><li>다 고쳤으면 프로젝트를 다시 저장합니다.</li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q4", "type": "text", "text": "이름표마다 샘플 개수가 비슷한가요? 차이가 크면 어떻게 할까요?", "example": "작은 소리가 적어서 4개 더 모았다", "lines": 2}, {"id": "q5", "type": "text", "text": "한 사람 소리만 모으면 어떤 문제가 생길까요?", "example": "다른 친구 소리는 못 알아들을 수 있다", "lines": 2}]}, {"min": 3, "label": "정리", "title": "오늘 배운 것", "html": "<ul class=\"check\"><li>소리를 세기에 따라 나누어 이름표를 정할 수 있다.</li><li>티처블 머신에 소리 데이터를 모을 수 있다.</li></ul>", "say": "", "answer": "잘못된 데이터로 배우면 AI도 잘못 구별합니다. 그래서 이름표를 정확히 붙여야 합니다.", "questions": [{"id": "q6", "type": "text", "text": "이름표를 잘못 붙이면 AI는 어떻게 될까요?", "example": "AI도 잘못 배운다", "lines": 1}]}]}, "3": {"title": "AI를 학습시키고 고치기", "goals": ["모은 데이터로 AI를 학습시킬 수 있다.", "AI가 틀린 까닭을 찾아 고칠 수 있다."], "steps": [{"min": 5, "label": "열기", "title": "우리 AI는 잘 맞힐까?", "html": "<p>지난 시간에 모은 소리로 AI를 가르쳐 봐요.</p>", "say": "아기가 그림책을 보며 동물 이름을 배우듯, AI도 이름표가 붙은 소리를 듣고 배워요.", "answer": "", "questions": [{"id": "q1", "type": "text", "text": "우리 AI는 10번 중 몇 번 맞힐까요? 그렇게 생각한 까닭도 써요.", "example": "7번. 작은 소리를 적게 모았기 때문이다", "lines": 2}]}, {"min": 10, "label": "활동 1", "title": "AI 학습시키기", "html": "<div class=\"card\"><h3>이렇게 해요</h3><ol><li><a href=\"https://teachablemachine.withgoogle.com/train/audio\" target=\"_blank\" rel=\"noopener\">티처블 머신 오디오 프로젝트 열기</a>를 누릅니다.</li><li>메뉴(≡) → <b>파일에서 프로젝트 열기</b>로 2차시 파일을 엽니다.</li><li>세 이름표의 샘플 개수를 확인합니다.</li><li><b>모델 학습시키기</b>를 누릅니다.</li><li>학습이 끝날 때까지 <b>다른 탭으로 옮기지 않습니다.</b></li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q2", "type": "text", "text": "AI가 학습하는 동안 무엇을 하고 있을까요?", "example": "소리마다 다른 점을 찾고 있다", "lines": 1}]}, {"min": 10, "label": "활동 2", "title": "새로운 소리로 시험하기", "html": "<div class=\"card\"><h3>이렇게 해요</h3><ol><li>오른쪽 미리보기 창을 봅니다.</li><li>학습에 쓰지 않은 새로운 소리를 냅니다.</li><li>다른 친구 목소리, 다른 거리에서도 해 봅니다.</li><li>AI가 고른 이름표를 표에 적습니다.</li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q3", "type": "table", "text": "시험 결과를 적어요.", "headers": ["번", "들려준 소리", "내 예상", "AI의 결과", "맞았나요?"], "rows": [{"label": "1", "cells": ["text", "text", "text", "ox"]}, {"label": "2", "cells": ["text", "text", "text", "ox"]}, {"label": "3", "cells": ["text", "text", "text", "ox"]}, {"label": "4", "cells": ["text", "text", "text", "ox"]}, {"label": "5", "cells": ["text", "text", "text", "ox"]}], "examples": {"0-0": "멀리서 박수", "0-1": "큰 소리", "0-2": "작은 소리"}}, {"id": "q4", "type": "text", "text": "5번 중 몇 번 맞혔나요?", "example": "3번", "lines": 1}]}, {"min": 12, "label": "활동 3", "title": "AI 고치고 내보내기", "html": "<div class=\"card\"><h3>이렇게 해요</h3><ol><li>틀린 소리를 보고 까닭을 찾습니다.</li><li>데이터를 더 모으거나 잘못된 샘플을 지웁니다.</li><li><b>모델 학습시키기</b>를 다시 누릅니다.</li><li>같은 소리로 다시 시험합니다.</li></ol></div><div class=\"card\"><h3>모델 내보내기 (4차시에 씁니다)</h3><ol><li><b>모델 내보내기</b>를 누릅니다.</li><li><b>모델 업로드</b>를 누릅니다.</li><li>나온 공유 링크를 복사합니다.</li><li>아래 마지막 칸에 붙여 넣습니다.</li><li>메뉴(≡)에서 프로젝트 파일도 다시 저장합니다.</li></ol></div>", "say": "", "answer": "", "questions": [{"id": "q5", "type": "text", "text": "AI가 틀린 까닭은 무엇이었나요?", "example": "멀리서 낸 박수 소리가 데이터에 없었다", "lines": 2}, {"id": "q6", "type": "text", "text": "무엇을 고쳤고, 다시 시험했더니 몇 번 맞혔나요?", "example": "멀리서 낸 박수를 5개 더 모았더니 5번 중 5번 맞혔다", "lines": 2}, {"id": "q7", "type": "text", "text": "우리 모둠 모델의 공유 링크를 붙여 넣어요.", "example": "https://teachablemachine.withgoogle.com/models/…/", "lines": 1}]}, {"min": 3, "label": "정리", "title": "오늘 배운 것", "html": "<ul class=\"check\"><li>모은 데이터로 AI를 학습시킬 수 있다.</li><li>AI가 틀린 까닭을 찾아 고칠 수 있다.</li></ul>", "say": "", "answer": "데이터가 많고, 여러 사람·여러 거리의 소리가 섞이고, 이름표가 정확할수록 AI가 잘 맞힙니다.", "questions": [{"id": "q8", "type": "text", "text": "데이터의 양과 질은 AI에 어떤 영향을 주나요?", "example": "데이터가 많고 다양할수록 AI가 더 잘 맞힌다", "lines": 1}]}]}, "4": {"title": "소음 지킴이 로봇 만들기", "goals": ["인식-판단-행동 순서로 로봇의 움직임을 계획할 수 있다.", "AI가 고른 소리에 따라 로봇이 반응하게 만들 수 있다."], "steps": [{"min": 5, "label": "열기", "title": "소음 지킴이 로봇을 떠올려요", "html": "<p>쉬는 시간과 모둠 활동 시간의 교실 소리를 떠올려요.</p>", "say": "소음이 커지면 알려 주는 친구가 있다면 어떨까요? 오늘은 AI가 듣고 로봇이 움직이게 만들어요.", "answer": "", "questions": [{"id": "q1", "type": "text", "text": "우리 교실에서 가장 시끄러운 때는 언제인가요?", "example": "쉬는 시간에 의자를 끌 때", "lines": 1}]}, {"min": 10, "label": "활동 1", "title": "순서도로 계획하기", "html": "<p>로봇은 <b>듣고(인식) → 생각하고(판단) → 움직여요(행동)</b>.</p>", "say": "", "answer": "소리는 크롬북 마이크로 듣고, 티처블 머신 모델이 판단하고, 카미봇 파이가 움직입니다.", "questions": [{"id": "q2", "type": "table", "text": "소리마다 로봇이 어떻게 반응할지 정해요.", "headers": ["AI가 고른 이름표", "LED 색", "소리·움직임"], "rows": [{"label": "큰 소리", "cells": ["text", "text"]}, {"label": "작은 소리", "cells": ["text", "text"]}, {"label": "조용함", "cells": ["text", "text"]}], "examples": {"0-0": "빨강", "0-1": "삐 소리, 뒤로 1초", "1-0": "노랑", "2-0": "초록"}}, {"id": "q3", "type": "text", "text": "로봇은 무엇으로 소리를 들을까요?", "example": "크롬북 마이크", "lines": 1}]}, {"min": 12, "label": "활동 2", "title": "소음 지킴이 프로그램 만들기", "html": "<div class=\"card warn\"><h3>로봇 약속</h3><ul><li>로봇은 책상 가운데에서만 움직입니다.</li><li>쓰지 않을 때는 전원을 끕니다.</li><li>로봇을 들고 돌아다니지 않습니다.</li></ul></div><div class=\"card\"><h3>이렇게 해요</h3><ol><li><a href=\"files/lesson4-noise-guard.sb3\" download>소음 지킴이 파일 내려받기</a>를 누릅니다.</li><li><a href=\"https://bitblockai.vercel.app\" target=\"_blank\" rel=\"noopener\">비트블록 AI 열기</a>를 누르고 파일 → 컴퓨터에서 불러오기로 엽니다.</li><li>카미봇 파이를 연결합니다.</li><li><b>학습 모델 다운로드</b> 블록 칸에 3차시 공유 링크를 붙여 넣습니다.</li><li>활동 1에서 정한 대로 LED 색과 움직임을 바꿉니다.</li><li>초록 깃발을 누르고 마이크 사용을 허용합니다.</li></ol></div>", "say": "반응한 뒤 2초 기다리는 블록은 로봇의 삐 소리를 AI가 다시 듣지 않게 해 줘요.", "answer": "", "questions": [{"id": "q4", "type": "text", "text": "우리 모둠이 바꾼 반응을 써요.", "example": "큰 소리일 때 오른쪽으로 한 바퀴 돌게 했다", "lines": 2}]}, {"min": 10, "label": "활동 3", "title": "교실 상황으로 시험하고 고치기", "html": "", "say": "", "answer": "", "questions": [{"id": "q5", "type": "table", "text": "상황마다 시험해 보고 적어요.", "headers": ["상황", "로봇의 반응", "고칠 점"], "rows": [{"label": "조용히 공부할 때", "cells": ["text", "text"]}, {"label": "모둠 토의할 때", "cells": ["text", "text"]}, {"label": "쉬는 시간", "cells": ["text", "text"]}], "examples": {"0-0": "초록 불", "2-0": "빨간 불, 삐 소리", "2-1": "삐 소리를 더 짧게"}}, {"id": "q6", "type": "text", "text": "잘 안 된 부분은 어떻게 고쳤나요?", "example": "작은 소리를 큰 소리로 알아서 데이터를 더 모았다", "lines": 2}]}, {"min": 3, "label": "정리", "title": "오늘 배운 것", "html": "<ul class=\"check\"><li>인식-판단-행동 순서로 로봇의 움직임을 계획할 수 있다.</li><li>AI가 고른 소리에 따라 로봇이 반응하게 만들 수 있다.</li></ul>", "say": "다음 시간에는 이 로봇으로 소음을 줄이는 방법을 실험해요.", "answer": "", "questions": [{"id": "q7", "type": "text", "text": "센서, AI, 로봇이 하는 일을 한 문장으로 써요.", "example": "마이크로 듣고 AI가 판단하면 로봇이 움직인다", "lines": 1}]}]}};
+const GROUPS = ['1모둠', '2모둠', '3모둠', '4모둠', '5모둠', '6모둠'];
+const POLL_MS = 3000, PING_MS = 20000;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const S = {role: 'student', lesson: 1, cls: 1, group: '', name: '', pin: '',
+           view: 0, classStep: 0, answers: {}, sent: {}, dirty: {}, state: null, students: [], tab: 'lesson'};
+const room = () => `L${S.lesson}-C${S.cls}`;
+const L = () => LESSONS[S.lesson];
+const qlist = () => L().steps.flatMap((st, i) => st.questions.map(q => ({...q, step: i})));
+
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), 2600);
+}
+async function api(action, opts = {}) {
+  const params = new URLSearchParams({room: room(), ...(opts.query || {})});
+  if (S.role === 'teacher') params.set('pin', S.pin);
+  const init = opts.body ? {method: 'POST', headers: {'content-type': 'application/json'},
+    body: JSON.stringify({room: room(), pin: S.pin, ...opts.body})} : {};
+  const res = await fetch(`/api/${action}?${params}`, init);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.status);
+  return data;
+}
+
+/* ---------- 입장 ---------- */
+function opts(el, items, cur, set) {
+  el.innerHTML = items.map(([v, t]) => `<button type="button" class="opt${v == cur ? ' on' : ''}" data-v="${v}">${t}</button>`).join('');
+  el.onclick = e => { const b = e.target.closest('.opt'); if (!b) return; set(b.dataset.v);
+    [...el.children].forEach(x => x.classList.toggle('on', x === b)); };
+}
+function setupGate() {
+  const u = new URLSearchParams(location.search);
+  if (u.get('lesson')) S.lesson = Math.min(4, Math.max(1, +u.get('lesson')));
+  if (u.get('class')) S.cls = Math.min(7, Math.max(1, +u.get('class')));
+  opts($('#opt-lesson'), [1, 2, 3, 4].map(n => [n, `${n}차시`]), S.lesson, v => S.lesson = +v);
+  opts($('#opt-class'), [1, 2, 3, 4, 5, 6, 7].map(n => [n, `${n}반`]), S.cls, v => S.cls = +v);
+  opts($('#opt-group'), GROUPS.map(g => [g, g]), '', v => S.group = v);
+  $('#btn-role').onclick = () => {
+    S.role = S.role === 'student' ? 'teacher' : 'student';
+    $('#student-fields').hidden = S.role === 'teacher';
+    $('#teacher-fields').hidden = S.role === 'student';
+    $('#btn-role').textContent = S.role === 'teacher' ? '학생으로 입장하기' : '선생님으로 입장하기';
+    $('#gate-msg').textContent = '';
+  };
+  $('#btn-enter').onclick = enter;
+  $('#in-name').onkeydown = e => { if (e.key === 'Enter') enter(); };
+  $('#in-pin').onkeydown = e => { if (e.key === 'Enter') enter(); };
+}
+async function enter() {
+  const msg = $('#gate-msg');
+  if (S.role === 'student') {
+    S.name = $('#in-name').value.trim();
+    if (!S.group) return msg.textContent = '모둠을 골라요.';
+    if (!S.name) return msg.textContent = '이름을 써요.';
+  } else {
+    S.pin = $('#in-pin').value.trim();
+    if (!S.pin) return msg.textContent = '교사 PIN을 써요.';
+  }
+  msg.textContent = '들어가는 중…';
+  try {
+    if (S.role === 'student') {
+      const mine = await api('mine', {query: {group: S.group, name: S.name}});
+      S.answers = mine.answers || {}; S.sent = JSON.parse(JSON.stringify(S.answers));
+      await api('ping', {body: {group: S.group, name: S.name, step: 0}});
+    } else {
+      await api('teacher');
+    }
+  } catch (e) {
+    if (location.protocol === 'file:' || String(e.message).includes('Failed to fetch') || String(e.message) === '404')
+      msg.textContent = '서버에 연결하지 못했어요. Netlify에 배포한 주소에서 열어야 해요.';
+    else msg.textContent = '들어가지 못했어요: ' + e.message;
+    return;
+  }
+  history.replaceState(null, '', `?lesson=${S.lesson}&class=${S.cls}`);
+  $('#gate').hidden = true; $('#room').hidden = false; $('#chips').hidden = false;
+  $('#me').textContent = S.role === 'teacher' ? `[${S.cls}반] 선생님` : `[${S.cls}반 ${S.group}] ${S.name}`;
+  $('#sub').textContent = `${S.lesson}차시 · ${L().title} · ${S.cls}반`;
+  $('#btn-reset').hidden = S.role !== 'teacher';
+  $('#tab-roster').hidden = S.role !== 'teacher';
+  $('#btn-save').textContent = S.role === 'teacher' ? '결과저장(CSV)' : '내 답 저장';
+  $('#goals').innerHTML = L().goals.map(g => `<li>${esc(g)}</li>`).join('');
+  renderFlow(); renderStep(); poll(); setInterval(poll, POLL_MS);
+  if (S.role === 'student') setInterval(() => api('ping', {body: {group: S.group, name: S.name, step: S.view}}).catch(() => {}), PING_MS);
+}
+
+/* ---------- 왼쪽 수업 흐름 ---------- */
+function renderFlow() {
+  let t = 0;
+  $('#flow').innerHTML = L().steps.map((st, i) => {
+    const from = t; t += st.min;
+    const now = i === S.classStep, seen = i === S.view;
+    return `<li><button type="button" data-i="${i}" class="${now ? 'now' : ''} ${seen && !now ? 'seen' : ''}">
+      <span class="t"><span>${from}~${t}분 (${st.min}분) · ${esc(st.label)}</span>${now ? '<span class="tag">진행 중</span>' : ''}</span>
+      <b>${i + 1}. ${esc(st.title)}</b></button></li>`;
+  }).join('');
+  $('#flow').onclick = e => { const b = e.target.closest('button'); if (!b) return; go(+b.dataset.i); };
+}
+async function go(i) {
+  i = Math.max(0, Math.min(L().steps.length - 1, i));
+  S.view = i;
+  if (S.role === 'teacher') {
+    S.classStep = i;
+    try { await api('control', {body: {step: i}}); } catch (e) { toast('단계를 바꾸지 못했어요: ' + e.message); }
+  }
+  setTab('lesson'); renderFlow(); renderStep(); scrollTo({top: 0, behavior: 'smooth'});
+}
+
+/* ---------- 문항 ---------- */
+function valueText(q, v) {
+  if (q.type !== 'table' || !v || typeof v !== 'object') return String(v ?? '');
+  const lines = [];
+  q.rows.forEach((r, ri) => r.cells.forEach((c, ci) => {
+    const x = v[`${ri}-${ci}`]; if (x) lines.push(`${r.label} / ${q.headers[ci + 1]}: ${x}`);
+  }));
+  return lines.join('\n');
+}
+const isEmpty = v => v === undefined || v === '' || (typeof v === 'object' && !Object.values(v).some(x => String(x).trim()));
+function fieldHTML(q) {
+  const v = S.answers[q.id];
+  const dis = S.role === 'teacher' ? ' disabled' : '';
+  if (q.type === 'text') {
+    const rows = q.lines === 1 ? 1 : 3;
+    return `<textarea class="field" rows="${rows}" data-q="${q.id}" placeholder="${q.example ? esc('예) ' + q.example) : ''}"${dis}>${esc(v || '')}</textarea>`;
+  }
+  const val = v && typeof v === 'object' ? v : {};
+  let h = '<table><tr>' + q.headers.map(x => `<th>${esc(x)}</th>`).join('') + '</tr>';
+  q.rows.forEach((r, ri) => {
+    h += `<tr><td><b>${esc(r.label)}</b></td>`;
+    r.cells.forEach((c, ci) => {
+      const k = `${ri}-${ci}`, cur = val[k] || '', ex = q.examples[k] ? `예) ${q.examples[k]}` : '';
+      if (c === 'ox') h += `<td><select class="field" data-q="${q.id}" data-k="${k}"${dis}><option value="">고르기</option>` +
+        ['○ 맞음', '× 틀림'].map(o => `<option${o === cur ? ' selected' : ''}>${o}</option>`).join('') + '</select></td>';
+      else h += `<td><input class="field" ${c === 'num' ? 'type="number" min="0"' : 'type="text"'} data-q="${q.id}" data-k="${k}" value="${esc(cur)}" placeholder="${esc(ex)}"${dis}></td>`;
+    });
+    h += '</tr>';
+  });
+  return h + '</table>';
+}
+function qNumber(id) { return qlist().findIndex(x => x.id === id) + 1; }
+function questionHTML(q) {
+  const n = qNumber(q.id);
+  let h = `<div class="q" id="box-${q.id}"><p class="qt"><span class="num">${n}</span>${esc(q.text)}</p>${fieldHTML(q)}`;
+  if (S.role === 'student') {
+    h += `<div class="qrow"><button class="btn green" type="button" data-send="${q.id}">답 등록</button>
+          <span class="st" id="st-${q.id}"></span></div>`;
+    h += `<div class="answers" id="rev-${q.id}" hidden></div>`;
+  } else {
+    const on = S.state?.reveal?.[q.id];
+    h += `<div class="qrow"><label class="switch"><input type="checkbox" data-reveal="${q.id}"${on ? ' checked' : ''}> 학생 화면에 반 전체 답 공개</label>
+          <span class="st" id="cnt-${q.id}"></span></div><div class="answers" id="all-${q.id}"></div>`;
+  }
+  return h + '</div>';
+}
+function renderStep() {
+  const st = L().steps[S.view], n = L().steps.length;
+  let h = `<div class="stephead"><span class="pill">${S.view + 1}/${n} · ${esc(st.label)}</span>
+    <button class="timer" type="button" data-min="${st.min}">${st.min}′</button>
+    ${S.role === 'student' && S.view !== S.classStep ? '<span class="st warn">선생님은 다른 단계를 하고 있어요</span>' : ''}</div>
+    <h2>${esc(st.title)}</h2>`;
+  if (st.say) h += `<p class="say">${esc(st.say)}</p>`;
+  h += st.html;
+  h += st.questions.map(questionHTML).join('');
+  if (st.answer && S.role === 'teacher') h += `<p class="answer">${esc(st.answer)}</p>`;
+  h += `<div class="nav"><button class="btn sub" type="button" data-go="${S.view - 1}"${S.view === 0 ? ' disabled' : ''}>◀ 이전 단계</button>
+        <button class="btn" type="button" data-go="${S.view + 1}"${S.view === n - 1 ? ' disabled' : ''}>다음 단계 ▶</button></div>`;
+  const box = $('#view-lesson'); box.innerHTML = h;
+  st.questions.forEach(q => { updateStatus(q.id); renderAnswers(q); });
+  box.oninput = box.onchange = e => {
+    const el = e.target.closest('[data-q]'); if (!el) return;
+    const qid = el.dataset.q;
+    if (el.dataset.k) { S.answers[qid] = {...(typeof S.answers[qid] === 'object' ? S.answers[qid] : {}), [el.dataset.k]: el.value}; }
+    else S.answers[qid] = el.value;
+    S.dirty[qid] = JSON.stringify(S.answers[qid]) !== JSON.stringify(S.sent[qid]);
+    updateStatus(qid);
+  };
+  box.onclick = async e => {
+    const send = e.target.closest('[data-send]'), nav = e.target.closest('[data-go]'), rv = e.target.closest('[data-reveal]');
+    if (send) sendAnswer(send.dataset.send, send);
+    if (nav && !nav.disabled) go(+nav.dataset.go);
+    if (rv) {
+      try { const r = await api('control', {body: {reveal: {[rv.dataset.reveal]: rv.checked}}}); S.state = r.state;
+            toast(rv.checked ? '학생 화면에 답을 공개했어요.' : '공개를 껐어요.'); }
+      catch (err) { rv.checked = !rv.checked; toast('바꾸지 못했어요: ' + err.message); }
+    }
+  };
+  timer(box.querySelector('.timer'));
+}
+async function sendAnswer(qid, btn) {
+  const v = S.answers[qid];
+  if (isEmpty(v)) { $('#st-' + qid).textContent = '답을 먼저 써요.'; return; }
+  btn.disabled = true; $('#st-' + qid).textContent = '보내는 중…';
+  try {
+    await api('answer', {body: {group: S.group, name: S.name, qid, value: v, step: S.view}});
+    S.sent[qid] = JSON.parse(JSON.stringify(v)); S.dirty[qid] = false;
+    S.sentAt = S.sentAt || {}; S.sentAt[qid] = new Date();
+  } catch (e) { $('#st-' + qid).textContent = '보내지 못했어요. 다시 눌러요. (' + e.message + ')'; btn.disabled = false; return; }
+  btn.disabled = false; updateStatus(qid);
+}
+function updateStatus(qid) {
+  const el = $('#st-' + qid); if (!el) return;
+  if (S.dirty[qid]) { el.className = 'st warn'; el.textContent = '고친 내용이 있어요. 답 등록을 눌러요.'; }
+  else if (!isEmpty(S.sent[qid])) {
+    const t = S.sentAt?.[qid]; el.className = 'st ok';
+    el.textContent = '등록됨 ✓' + (t ? ' ' + t.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) : '') + ' · 다시 쓰면 고쳐져요';
+  } else { el.className = 'st'; el.textContent = ''; }
+}
+function ansCards(list, q) {
+  return '<div class="ansgrid">' + list.map(a => `<div class="ans"><div class="who">${esc(a.group)} · ${esc(a.name)}</div><pre>${esc(valueText(q, a.value))}</pre></div>`).join('') + '</div>';
+}
+function renderAnswers(q) {
+  if (S.role === 'student') {
+    const box = $('#rev-' + q.id); if (!box) return;
+    const list = S.state?.reveal?.[q.id] ? (S.state.revealed?.[q.id] || []) : null;
+    box.hidden = !list;
+    if (list) box.innerHTML = `<h4>우리 반 친구들의 답 (${list.length}명)</h4>` + (list.length ? ansCards(list, q) : '<p class="st">아직 답이 없어요.</p>');
+    return;
+  }
+  const box = $('#all-' + q.id); if (!box) return;
+  const list = S.students.filter(s => !isEmpty(s.answers?.[q.id])).map(s => ({group: s.group, name: s.name, value: s.answers[q.id]}));
+  $('#cnt-' + q.id).textContent = `${list.length}명 답함 / 입장 ${S.students.length}명`;
+  box.innerHTML = list.length ? ansCards(list, q) : '<p class="st">아직 답이 없어요.</p>';
+  const cb = document.querySelector(`[data-reveal="${q.id}"]`); if (cb) cb.checked = !!S.state?.reveal?.[q.id];
+}
+
+/* ---------- 진행 현황 (교사) ---------- */
+function renderRoster() {
+  const qs = qlist(), now = Date.now();
+  const online = S.students.filter(s => now - (s.lastSeen || 0) < 45000).length;
+  let h = `<h2>진행 현황</h2><p class="st">입장 ${S.students.length}명 · 지금 접속 ${online}명 · 칸의 ✓는 답을 등록한 문항입니다.</p>`;
+  h += '<table class="roster"><tr><th>모둠 · 이름</th><th>보는 단계</th>' +
+    qs.map(q => `<th title="${esc(q.text)}">${qNumber(q.id)}번<br><span class="st">${q.step + 1}단계</span></th>`).join('') + '<th>합계</th></tr>';
+  S.students.forEach(s => {
+    const n = qs.filter(q => !isEmpty(s.answers?.[q.id])).length;
+    const on = now - (s.lastSeen || 0) < 45000;
+    h += `<tr><td><span class="dot${on ? ' on' : ''}"></span>${esc(s.group)} · ${esc(s.name)}</td><td>${(s.step ?? 0) + 1}</td>` +
+      qs.map(q => `<td>${isEmpty(s.answers?.[q.id]) ? '' : '<span class="done">✓</span>'}</td>`).join('') + `<td><b>${n}/${qs.length}</b></td></tr>`;
+  });
+  h += '</table>';
+  if (!S.students.length) h += '<p class="st">아직 들어온 학생이 없어요. 위쪽 QR 입장으로 주소를 나눠 주세요.</p>';
+  $('#view-roster').innerHTML = h;
+}
+function setTab(t) {
+  S.tab = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('#view-lesson').hidden = t !== 'lesson'; $('#view-roster').hidden = t !== 'roster';
+  if (t === 'roster') renderRoster();
+}
+$('#tabs').onclick = e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.tab); };
+
+/* ---------- 실시간 동기화 ---------- */
+let polling = false;
+async function poll() {
+  if (polling) return; polling = true;
+  try {
+    if (S.role === 'teacher') {
+      const d = await api('teacher');
+      S.state = d.state; S.students = d.students;
+      if (d.pinIsDefault) $('#sync').textContent = '※ 교사 PIN이 기본값(0000)이에요. Netlify에서 TEACHER_PIN을 바꿔 주세요.';
+      else $('#sync').textContent = '실시간 반영 중 · ' + new Date().toLocaleTimeString('ko-KR');
+      $('#live').textContent = `실시간 접속 ${d.state.online || 0}명`;
+      if (S.classStep !== d.state.step) { S.classStep = d.state.step; renderFlow(); }
+      L().steps[S.view].questions.forEach(renderAnswers);
+      if (S.tab === 'roster') renderRoster();
+    } else {
+      const d = await api('state');
+      const prevStep = S.classStep, prevRev = JSON.stringify([S.state?.reveal, S.state?.revealed]);
+      S.state = d;
+      $('#live').textContent = `실시간 접속 ${d.online || 0}명`;
+      $('#sync').textContent = '연결됨 · ' + new Date().toLocaleTimeString('ko-KR');
+      if (d.step !== prevStep) {
+        S.classStep = d.step;
+        if (S.view === prevStep || S.view !== d.step) { S.view = d.step; renderStep(); toast(`선생님이 ${d.step + 1}단계로 넘겼어요.`); }
+        renderFlow();
+      }
+      if (JSON.stringify([d.reveal, d.revealed]) !== prevRev) L().steps[S.view].questions.forEach(renderAnswers);
+    }
+  } catch (e) {
+    $('#sync').textContent = '연결이 잠시 끊겼어요. 다시 시도하는 중…';
+  } finally { polling = false; }
+}
+
+/* ---------- 타이머 ---------- */
+function timer(chip) {
+  if (!chip) return;
+  let id = null, left = 0;
+  const face = () => chip.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+  chip.onclick = () => {
+    if (id) { clearInterval(id); id = null; chip.removeAttribute('data-running'); chip.textContent = chip.dataset.min + '′'; return; }
+    left = chip.dataset.min * 60; chip.setAttribute('data-running', ''); face();
+    id = setInterval(() => { if (--left <= 0) { clearInterval(id); id = null; chip.removeAttribute('data-running'); chip.textContent = '끝!'; return; } face(); }, 1000);
+  };
+}
+
+/* ---------- 결과저장 · 초기화 · QR · 나가기 ---------- */
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const csvCell = s => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+$('#btn-save').onclick = async () => {
+  const qs = qlist(), title = `${S.lesson}차시_${L().title.replace(/[?\s]/g, '')}_${S.cls}반`;
+  if (S.role === 'teacher') {
+    try { const d = await api('teacher'); S.students = d.students; } catch (e) { return toast('불러오지 못했어요: ' + e.message); }
+    const head = ['반', '모둠', '이름', '마지막 등록', '등록 문항 수', ...qs.map(q => `${qNumber(q.id)}. ${q.text}`)];
+    const rows = S.students.map(s => [`${S.cls}반`, s.group, s.name, s.at ? new Date(s.at).toLocaleString('ko-KR') : '',
+      qs.filter(q => !isEmpty(s.answers?.[q.id])).length, ...qs.map(q => valueText(q, s.answers?.[q.id]))]);
+    download(`${title}_결과.csv`, '﻿' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+    toast(`${S.students.length}명의 답을 CSV로 저장했어요.`);
+  } else {
+    const unsent = qs.filter(q => S.dirty[q.id]).length;
+    const text = `${S.lesson}차시 ${L().title}\n${S.cls}반 ${S.group} ${S.name}\n저장한 때: ${new Date().toLocaleString('ko-KR')}\n\n` +
+      qs.map(q => `${qNumber(q.id)}. ${q.text}\n${valueText(q, S.answers[q.id]) || '(빈칸)'}\n`).join('\n');
+    download(`${title}_${S.group}_${S.name}.txt`, text, 'text/plain;charset=utf-8');
+    toast(unsent ? `내 답을 파일로 저장했어요. 아직 등록 안 한 답이 ${unsent}개 있어요.` : '내 답을 파일로 저장했어요.');
+  }
+};
+$('#btn-reset').onclick = async () => {
+  const typed = prompt(`${S.lesson}차시 ${S.cls}반의 모든 답과 진행 상태를 지웁니다. 되돌릴 수 없어요.\n지우려면 "초기화"라고 쓰세요.`);
+  if (typed !== '초기화') return;
+  try { const r = await api('reset', {body: {}}); S.classStep = 0; S.view = 0; S.students = [];
+        renderFlow(); renderStep(); toast(`초기화했어요. (${r.deleted}개 지움)`); }
+  catch (e) { toast('초기화하지 못했어요: ' + e.message); }
+};
+$('#btn-qr').onclick = () => {
+  const url = `${location.origin}${location.pathname}?lesson=${S.lesson}&class=${S.cls}`;
+  const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+  $('#qr-box').innerHTML = qr.createSvgTag({cellSize: 8, margin: 2, scalable: true});
+  $('#qr-label').textContent = `${S.lesson}차시 · ${S.cls}반 — 찍고 모둠과 이름을 고르면 들어와요.`;
+  $('#qr-url').textContent = url; $('#qr-modal').hidden = false;
+  $('#btn-copy').onclick = () => navigator.clipboard.writeText(url).then(() => toast('링크를 복사했어요.'), () => toast('복사하지 못했어요. 주소를 직접 알려 주세요.'));
+};
+$('#btn-qr-close').onclick = () => $('#qr-modal').hidden = true;
+$('#qr-modal').onclick = e => { if (e.target.id === 'qr-modal') $('#qr-modal').hidden = true; };
+$('#btn-exit').onclick = () => {
+  if (S.role === 'student' && Object.values(S.dirty).some(Boolean) && !confirm('등록하지 않은 답이 있어요. 그래도 나갈까요?')) return;
+  location.href = `${location.pathname}?lesson=${S.lesson}&class=${S.cls}`;
+};
+addEventListener('beforeunload', e => { if (Object.values(S.dirty).some(Boolean)) { e.preventDefault(); e.returnValue = ''; } });
+setupGate();
+</script>
+</body>
+</html>

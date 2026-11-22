@@ -1,0 +1,10 @@
+{
+  "name": "soundbot-classroom",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "소음 지킴이 로봇 프로젝트 실시간 수업방 (Netlify Functions + Blobs)",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9"
+  }
+}
